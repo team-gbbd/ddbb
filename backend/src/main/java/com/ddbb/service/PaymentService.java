@@ -30,7 +30,7 @@ public class PaymentService {
 
         try{
             Map<String, Object> paymentData = webClient.get()
-                    .uri(apiUrl + "/payments" + paymentId)
+                    .uri(apiUrl + "/payments/" + paymentId)
                     .header(HttpHeaders.AUTHORIZATION, "PortOne " + apiSecret)
                     .retrieve()
                     .bodyToMono(Map.class)

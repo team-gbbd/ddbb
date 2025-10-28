@@ -10,19 +10,19 @@ const Header = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "12px 32px",
+        padding: "14px 32px",
         borderBottom: "1px solid #eee",
       }}
     >
       <Link to="/">
-        <img src={ddbblogo} alt="ddbblogo" style={{ height: 40 }} />
+        <img src={ddbblogo} alt="ddbblogo" style={{ height: 45 }} />
       </Link>
       <Link
         to="/guide"
         style={{
           color: "#222",
           textDecoration: "none",
-          fontWeight: 500,
+          fontWeight: 600,
           fontSize: 16,
         }}
       >
