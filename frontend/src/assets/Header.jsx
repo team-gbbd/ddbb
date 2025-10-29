@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import ddbblogo from "../assets/ddbblogo.png";
+import ddbblogo from "../assets/images/ddbblogo.png";
 
 const Header = () => {
   return (
@@ -18,7 +18,7 @@ const Header = () => {
         <img src={ddbblogo} alt="ddbblogo" style={{ height: 45 }} />
       </Link>
       <Link
-        to="/guide"
+        to="/GuidePage"
         style={{
           color: "#222",
           textDecoration: "none",

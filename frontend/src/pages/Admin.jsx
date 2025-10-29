@@ -1,8 +1,7 @@
 import React from "react";
 import Header from "../assets/Header";
 
-
-const GuidePage = () => {
+const Admin = () => {
   return (
     <>
       <Header />
@@ -10,4 +9,4 @@ const GuidePage = () => {
   );
 };
 
-export default GuidePage;
+export default Admin;
