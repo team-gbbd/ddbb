@@ -1,7 +1,7 @@
 import React from "react";
-import "../components/MainPage.css";
+import "../styles/MainPage.css";
 import Header from "../assets/Header";
-import MainLogo from "../assets/images/MainLogo.png";
+import MainLogo from "../assets/MainLogo.png";
 
 const MainPage = () => {
   const handlePaymentStart = () => {
@@ -11,8 +11,7 @@ const MainPage = () => {
 
   const handleAdminPage = () => {
     // 관리자 페이지 로직
-
-    window.location.href = "/Admin";
+    window.location.href = "/admin";
   };
 
   return (
@@ -31,7 +30,7 @@ const MainPage = () => {
               <h1>딥딥빵빵</h1>
               <p className="subtitle">편리한 결제와 관리 시스템을 경험하세요</p>
               <p className="description">
-                딥딥빵빵은 AI를 통해 빠르고 편리한 빵 스캔 및 빵 추천, 결제
+                딥딥빵빵은 AI를 통해 편리하고 신속한 빵 스캔 및 빵 추천, 결제
                 시스템을 제공합니다. 어쩌고저쩌고
               </p>
             </div>
@@ -48,15 +47,15 @@ const MainPage = () => {
               <div className="button-icon">💳</div>
               <div className="button-content">
                 <h3>결제 시작</h3>
-                <p>빠르고 편리한 결제 시작</p>
+                <p>빠르고 편리한 결제를 시작하세요</p>
               </div>
             </button>
 
             <button className="action-button admin" onClick={handleAdminPage}>
               <div className="button-icon">⚙️</div>
               <div className="button-content">
-                <h3>관리자 대시보드</h3>
-                <p>재고 및 매출 관리</p>
+                <h3>관리자 페이지</h3>
+                <p>상품 및 주문을 관리하세요</p>
               </div>
             </button>
           </div>
@@ -67,3 +66,4 @@ const MainPage = () => {
 };
 
 export default MainPage;
+

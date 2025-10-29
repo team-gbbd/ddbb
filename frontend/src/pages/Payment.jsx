@@ -1,6 +1,6 @@
 import React from "react";
 import Header from "../assets/Header";
-import "../components/Payment.css";
+import "../styles/Payment.css";
 import {handlePayment} from "../utils/PaymentService"
 
 const dummyBreads = [
@@ -16,7 +16,21 @@ const dummyBreads = [
 ];
 
 const Payment = () => {
-  const total = dummyBreads.reduce((sum, bread) => sum + bread.price, 0);
+  // 더미 데이터를 실제 장바구니 형식으로 변환
+  // TODO: 실제로는 AI 스캔 결과나 장바구니에서 가져와야 함
+  const cartItems = dummyBreads.map((bread, index) => ({
+    breadId: index + 1, // 실제로는 빵의 실제 ID를 사용해야 함
+    breadName: bread.name,
+    quantity: 1,
+    price: bread.price,
+  }));
+
+  const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const onPaymentClick = () => {
+    // 장바구니 데이터를 handlePayment에 전달
+    handlePayment(cartItems);
+  };
 
   return (
     <>
@@ -32,11 +46,13 @@ const Payment = () => {
         <div className="pos-box">
           <h2>스캔 내역</h2>
           <ul className="bread-list">
-            {dummyBreads.map((bread, idx) => (
+            {cartItems.map((item, idx) => (
               <li key={idx}>
-                <span className="bread-name">{bread.name}</span>
+                <span className="bread-name">
+                  {item.breadName} x {item.quantity}
+                </span>
                 <span className="bread-price">
-                  {bread.price.toLocaleString()}원
+                  {(item.price * item.quantity).toLocaleString()}원
                 </span>
               </li>
             ))}
@@ -44,7 +60,7 @@ const Payment = () => {
           <div className="total-price">
             총 합계: <span>{total.toLocaleString()}원</span>
           </div>
-          <button className="pay-btn" onClick={handlePayment}>결제하기</button>
+          <button className="pay-btn" onClick={onPaymentClick}>결제하기</button>
         </div>
       </div>
     </>
@@ -52,3 +68,4 @@ const Payment = () => {
 };
 
 export default Payment;
+
