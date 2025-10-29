@@ -5,14 +5,14 @@
 }
 
 .main-page {
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   background: linear-gradient(180deg, #f5f1eb 0%, #ebe4d9 100%);
 }
 
 /* 배너 섹션 */
 .banner-section {
   background: linear-gradient(135deg, #8b6f47 0%, #a6855e 50%, #8b6f47 100%);
-  padding: 60px 20px;
+  padding: 50px 10px;
   color: white;
   box-shadow: 0 4px 20px rgba(139, 111, 71, 0.3);
 }
@@ -22,14 +22,19 @@
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  gap: 70px;
   align-items: center;
+}
+
+.placeholder-image img {
+  width: 400px;
+  height: 400px;
 }
 
 .banner-text h1 {
   font-size: 3.5rem;
   font-weight: bold;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   color: #fff8e1;
 }
@@ -66,22 +71,9 @@
   border: 3px solid rgba(255, 255, 255, 0.2);
 }
 
-.placeholder-image img {
-  width: 400px;
-  height: 400px;
-}
-
-.placeholder-image span {
-  font-size: 1.5rem;
-  color: #5c4a30;
-  font-weight: 600;
-  text-align: center;
-  padding: 20px;
-}
-
 /* 액션 버튼 섹션 */
 .action-section {
-  padding: 80px 20px;
+  padding: 40px 20px;
 }
 
 .action-container {
@@ -110,7 +102,7 @@
 .action-button:hover {
   transform: translateY(-5px);
   box-shadow: 0 12px 35px rgba(139, 111, 71, 0.5);
-  background: linear-gradient(135deg, #a6855e 0%, #8b6f47 100%);
+  background: linear-gradient(135deg, #8a6f4e 0%, #8b6f47 100%);
 }
 
 .action-button:active {
@@ -119,13 +111,13 @@
 
 .action-button .button-icon {
   font-size: 4rem;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
 }
 
 .action-button .button-content h3 {
   font-size: 2rem;
-  margin-bottom: 15px;
+  margin-bottom: 13px;
   font-weight: bold;
 }
 
@@ -136,11 +128,11 @@
 }
 
 .action-button.payment {
-  background: linear-gradient(135deg, #8b6f47 0%, #a6855e 100%);
+  background: linear-gradient(135deg, #6b5740 0%, #8b6f47 100%);
 }
 
 .action-button.payment:hover {
-  background: linear-gradient(135deg, #a6855e 0%, #9c7850 100%);
+  background: linear-gradient(135deg, #57452d 0%, #4b3b2a 100%);
 }
 
 .action-button.admin {
@@ -148,7 +140,7 @@
 }
 
 .action-button.admin:hover {
-  background: linear-gradient(135deg, #8b6f47 0%, #7a5f42 100%);
+  background: linear-gradient(135deg, #57452d 0%, #4b3b2a 100%);
 }
 
 /* 반응형 디자인 */

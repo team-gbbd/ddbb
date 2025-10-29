@@ -77,6 +77,28 @@ public class PaymentController {
     }
     
     /**
+     * 포트원 결제 정보 조회
+     * 
+     * GET /api/payment/info/{paymentId}
+     * 
+     * @param paymentId 조회할 포트원 결제 ID
+     * @return 결제 정보
+     */
+    @GetMapping("/info/{paymentId}")
+    public ResponseEntity<?> getPaymentInfo(@PathVariable String paymentId) {
+        log.info("포트원 결제 정보 조회 요청 - Payment ID: {}", paymentId);
+        
+        try {
+            var paymentData = paymentService.getPaymentInfo(paymentId);
+            return ResponseEntity.ok(paymentData);
+            
+        } catch (Exception e) {
+            log.error("결제 정보 조회 실패 - Payment ID: {}", paymentId, e);
+            return ResponseEntity.badRequest().body("결제 정보 조회 실패: " + e.getMessage());
+        }
+    }
+    
+    /**
      * 결제 취소 처리 (향후 구현)
      * 
      * POST /api/payment/cancel/{paymentId}

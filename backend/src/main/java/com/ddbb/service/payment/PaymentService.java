@@ -10,26 +10,48 @@ import com.ddbb.repository.management.SalesRepository;
 import com.ddbb.service.management.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 결제 처리 서비스
- * 결제가 완료되면 자동으로 재고 차감 및 매출 기록
+ * - 포트원 결제 게이트웨이 연동
+ * - 결제 완료 시 자동으로 재고 차감 및 매출 기록
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PaymentService {
     
     private final SalesRepository salesRepository;
     private final BreadRepository breadRepository;
     private final InventoryService inventoryService;
+    
+    @Value("${portone.api.secret}")
+    private String apiSecret;
+    
+    @Value("${portone.api.url}")
+    private String apiUrl;
+    
+    private final WebClient webClient;
+    
+    // WebClient 초기화를 위한 생성자
+    public PaymentService(SalesRepository salesRepository, 
+                         BreadRepository breadRepository, 
+                         InventoryService inventoryService) {
+        this.salesRepository = salesRepository;
+        this.breadRepository = breadRepository;
+        this.inventoryService = inventoryService;
+        this.webClient = WebClient.builder().build();
+    }
     
     /**
      * 결제 완료 처리
@@ -94,6 +116,34 @@ public class PaymentService {
         } catch (Exception e) {
             log.error("결제 처리 중 오류 발생 - Payment ID: {}", request.getPaymentId(), e);
             throw new RuntimeException("결제 처리 실패: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 포트원 결제 정보 조회
+     * 외부 결제 게이트웨이(PortOne)에서 결제 정보를 조회합니다.
+     * 
+     * @param paymentId 포트원 결제 ID
+     * @return 결제 정보
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getPaymentInfo(String paymentId) {
+        log.info("포트원 결제 조회: paymentId={}", paymentId);
+        
+        try {
+            Map<String, Object> paymentData = webClient.get()
+                    .uri(apiUrl + "/payments/" + paymentId)
+                    .header(HttpHeaders.AUTHORIZATION, "PortOne " + apiSecret)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            
+            log.info("결제 조회 성공: {}", paymentData);
+            return paymentData;
+            
+        } catch (Exception e) {
+            log.error("결제 조회 실패: paymentId={}", paymentId, e);
+            throw new RuntimeException("결제 조회 실패: " + e.getMessage());
         }
     }
     
