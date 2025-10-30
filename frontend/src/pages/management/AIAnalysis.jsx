@@ -185,7 +185,7 @@ const AIAnalysis = () => {
         {/* 분석 결과 */}
         {result && !loading && (
           <>
-           
+
             {/* 그래프 섹션 */}
             {result.chartData && (
               <>
