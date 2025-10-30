@@ -7,6 +7,7 @@ import AdminDashboard from "./pages/management/AdminDashboard";
 import Inventory from "./pages/management/Inventory";
 import Statistics from "./pages/management/Statistics";
 import AIAnalysis from "./pages/management/AIAnalysis";
+import AiDashboard from "./pages/AiDashboard";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/admin/inventory" element={<Inventory />} />
         <Route path="/admin/statistics" element={<Statistics />} />
         <Route path="/admin/ai-analysis" element={<AIAnalysis />} />
+        <Route path="/dashboard" element={<AiDashboard />} />
       </Routes>
     </Router>
   );

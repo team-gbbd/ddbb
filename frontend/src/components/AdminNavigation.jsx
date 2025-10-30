@@ -14,7 +14,7 @@ const AdminNavigation = () => {
       <div className="container-fluid">
         <Link className="navbar-brand d-flex align-items-center" to="/">
           <img src={ddbblogo} alt="DDBB 로고" style={{ height: '40px', marginRight: '10px' }} />
-          
+
         </Link>
         <button
           className="navbar-toggler"
@@ -47,6 +47,11 @@ const AdminNavigation = () => {
             <li className="nav-item">
               <Link className={`nav-link ${isActive('/admin/ai-analysis')}`} to="/admin/ai-analysis">
                 <i className="bi bi-robot"></i> AI 분석
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className={`nav-link ${isActive('/dashboard')}`} to="/dashboard">
+                <i className="bi bi-bar-chart-line"></i> AI 대시보드
               </Link>
             </li>
           </ul>
