@@ -1,6 +1,7 @@
 import React from "react";
 import Header from "../assets/Header";
-import "../components/Payment.css";
+import "../styles/Payment.css";
+import {handlePayment} from "../utils/PaymentService"
 
 const dummyBreads = [
   { name: "통밀빵", price: 4300 },
@@ -43,7 +44,7 @@ const Payment = () => {
           <div className="total-price">
             총 합계: <span>{total.toLocaleString()}원</span>
           </div>
-          <button className="pay-btn">결제하기</button>
+          <button className="pay-btn" onClick={handlePayment}>결제하기</button>
         </div>
       </div>
     </>
@@ -51,3 +52,4 @@ const Payment = () => {
 };
 
 export default Payment;
+
