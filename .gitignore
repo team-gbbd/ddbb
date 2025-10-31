@@ -1,9 +1,10 @@
+# Backend (Spring Boot)
 HELP.md
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+backend/.gradle
+backend/build/
+!backend/gradle/wrapper/gradle-wrapper.jar
+!backend/**/src/main/**/build/
+!backend/**/src/test/**/build/
 
 ### STS ###
 .apt_generated
@@ -13,9 +14,9 @@ build/
 .settings
 .springBeans
 .sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+backend/bin/
+!backend/**/src/main/**/bin/
+!backend/**/src/test/**/bin/
 
 ### IntelliJ IDEA ###
 .idea
@@ -36,7 +37,7 @@ out/
 ### VS Code ###
 .vscode/
 
-
+# Python (ai-scanner)
 venv/
 **/venv/
 *.pyc
@@ -45,3 +46,29 @@ __pycache__/
 *.egg-info/
 dist/
 *.log
+
+# Frontend (React + Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Root level
+package-lock.json
