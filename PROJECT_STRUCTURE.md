@@ -2,7 +2,7 @@
 
 ## 📁 디렉토리 설명
 
-### ✅ 사용 중 (Main Projects)
+### ✅ 사용 중 (Main Project)
 
 ```
 fullstack-pos/              # 🚀 메인 프로젝트 (FastAPI + React)
@@ -16,26 +16,19 @@ fullstack-pos/              # 🚀 메인 프로젝트 (FastAPI + React)
     ├── node_modules/     # npm 패키지
     └── package.json      # 의존성
 
-gradio-demo/               # 📦 Gradio 버전 (레거시)
-├── app.py                # Gradio 앱 (작동 중)
-├── best.pt               # AI 모델 파일
-└── venv/                 # Python 가상환경
-
 data/                      # 📊 학습 데이터
 ├── train/                # 학습용 이미지
 ├── valid/                # 검증용 이미지
 └── README.md             # 데이터셋 설명
 ```
 
-### ⚠️ 사용 안 함 (Deprecated/Unused)
+### ⚠️ 삭제됨 (Cleaned Up)
 
 ```
-build/                     # Gradle 빌드 결과 (불필요)
-src/                       # Java 소스? (불필요)
-.gradle/                   # Gradle 캐시 (불필요)
-python-api/                # 비어있음 (불필요)
-gradle/, gradlew*          # Gradle 관련 (불필요)
-.idea/                     # IntelliJ 설정 (불필요)
+✅ gradio-demo/            # Gradio 버전 (삭제됨 - fullstack-pos로 대체)
+✅ .idea/                  # IntelliJ 설정 (삭제됨)
+✅ venv/ (in Git)          # 가상환경 (.gitignore 처리)
+✅ Java/Gradle 파일        # 초기 Spring Boot 파일들 (삭제됨)
 ```
 
 ### 📝 문서
@@ -50,7 +43,6 @@ README.md                  # 프로젝트 메인 설명 (작성 필요)
 
 ## 🚀 실행 방법
 
-### 1️⃣ FastAPI + React (추천)
 ```bash
 # 백엔드
 cd fullstack-pos/backend
@@ -63,65 +55,55 @@ npm install
 npm run dev
 ```
 
-### 2️⃣ Gradio 버전 (레거시)
-```bash
-cd gradio-demo
-source venv/bin/activate
-python3 app.py
-```
-
 ---
 
-## 🧹 정리 제안
+## 🧹 정리 완료
 
-### 삭제해도 되는 것들
-- `build/`
-- `src/` (Java 관련)
-- `.gradle/`
-- `gradle/`, `gradlew*`
-- `.idea/`
-- `python-api/`
-- `build.gradle`, `settings.gradle`
-- `HELP.md` (Spring Boot 기본 파일)
+### ✅ 삭제된 항목들
+- `gradio-demo/` - fullstack-pos로 대체
+- `.idea/` - IntelliJ 설정
+- `venv/` (Git 히스토리에서) - .gitignore 처리
+- Java/Gradle 관련 파일들 - 초기 Spring Boot 잔재
 
-### 유지해야 할 것들
-- `fullstack-pos/` ✅ 메인
-- `gradio-demo/` ✅ 백업용
-- `data/` ✅ 학습 데이터
-- `COLAB_TRAINING_GUIDE.md` ✅
-- `ROBOFLOW_GUIDE.md` ✅
-- `.git/` ✅ Git 히스토리
-- `.gitignore`, `.gitattributes` ✅
+### ✅ 유지 중인 항목들
+- `fullstack-pos/` - 메인 프로젝트
+- `data/` - 학습 데이터
+- `docs/` - 문서
+- `.git/` - Git 히스토리
+- `.gitignore`, `.gitattributes` - Git 설정
 
 ---
 
 ## 📊 프로젝트 히스토리
 
-1. **Spring Boot 프로젝트** (초기, 사용 중단)
-   - Java 기반
-   - Gradle 빌드 시스템
+1. **Spring Boot 프로젝트** (초기, 삭제됨)
+   - Java 기반, Gradle 빌드 시스템
+   - Python 기반으로 전환하며 삭제
 
-2. **Gradio 버전** (중간)
-   - Python 올인원
-   - 빠른 프로토타입
+2. **Gradio 버전** (중간, 삭제됨)
+   - Python 올인원 프로토타입
+   - FastAPI + React로 발전하며 삭제
 
-3. **FastAPI + React** (현재, 메인)
-   - 프로덕션 레벨
-   - 풀스택 분리 아키텍처
+3. **FastAPI + React** (현재)
+   - 프로덕션 레벨 풀스택 아키텍처
+   - 메인 프로젝트로 확정
 
 ---
 
-## 🎯 권장 구조 (정리 후)
+## 🎯 최종 구조 (정리 완료)
 
 ```
 ddbb/
-├── fullstack-pos/        # 메인 프로젝트
-├── gradio-demo/          # 레거시 (참고용)
+├── fullstack-pos/        # 메인 프로젝트 (FastAPI + React)
+│   ├── backend/          # Python FastAPI
+│   └── frontend/         # React TypeScript
 ├── data/                 # 학습 데이터
-├── docs/                 # 문서 (새로 생성)
+├── docs/                 # 문서
 │   ├── COLAB_TRAINING_GUIDE.md
 │   └── ROBOFLOW_GUIDE.md
+├── PROJECT_STRUCTURE.md  # 프로젝트 구조 설명
+├── README.md             # 프로젝트 메인 설명
 ├── .git/                 # Git
 ├── .gitignore
-└── README.md             # 프로젝트 메인 설명
+└── .gitattributes
 ```

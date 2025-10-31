@@ -20,7 +20,6 @@ ddbb/
 ├── fullstack-pos/        # ⭐ 메인: FastAPI + React (프로덕션 레벨)
 │   ├── backend/          # Python FastAPI
 │   └── frontend/         # React TypeScript
-├── gradio-demo/          # 📦 레거시: Gradio 버전 (백업용)
 ├── data/                 # 📊 학습 데이터
 └── docs/                 # 📝 문서
 ```
@@ -28,8 +27,6 @@ ddbb/
 ---
 
 ## 🚀 빠른 시작
-
-### 메인: FastAPI + React
 
 **1. 백엔드 실행**
 ```bash
@@ -49,26 +46,12 @@ npm run dev
 # → http://localhost:5173
 ```
 
-### 레거시: Gradio 버전
-
-```bash
-cd gradio-demo
-source venv/bin/activate
-python3 app.py
-# → http://localhost:7860
-```
-
 ---
 
 ## 🛠️ 기술 스택
 
-### FastAPI + React (메인)
 - **프론트엔드**: React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand
 - **백엔드**: FastAPI, Uvicorn, Pydantic
-- **AI**: YOLOv8, PyTorch, OpenCV
-
-### Gradio (레거시)
-- **프레임워크**: Gradio 5.49.1
 - **AI**: YOLOv8, PyTorch, OpenCV
 
 ---
@@ -103,17 +86,11 @@ torch.load = _patched_load
 
 ## 🎨 주요 기능
 
-### FastAPI + React
 - ✅ 실시간 빵 인식
 - ✅ 인터랙티브 장바구니 (수량 조절, 삭제)
 - ✅ 프로덕션 레벨 UI/UX (Framer Motion)
 - ✅ Toast 알림 (React Hot Toast)
 - ✅ 완벽한 반응형 디자인
-
-### Gradio
-- ✅ 간단한 UI
-- ✅ 빠른 프로토타이핑
-- ✅ 자동 영수증 생성
 
 ---
 
@@ -147,8 +124,7 @@ curl -X POST http://localhost:8000/api/detect \
    - 해결: 1280x1280 리사이즈 적용 (이미 적용됨)
 
 3. **iPhone 프레임 렉**
-   - Gradio: 촬영 버튼 방식으로 해결
-   - React: Axios FormData 업로드
+   - 해결: Axios FormData 업로드 방식 사용
 
 ---
 
@@ -186,7 +162,6 @@ curl -X POST http://localhost:8000/api/detect \
 **작업 중인 프로젝트**: DDBB Bakery POS
 **위치**: `/Users/kyungmin/Downloads/ddbb/`
 **메인 프로젝트**: `fullstack-pos/` (FastAPI + React)
-**백업**: `gradio-demo/` (Gradio)
 **모델**: `best.pt` (YOLOv8, mAP 99.5%)
 
 **현재 실행 중**:
