@@ -53,6 +53,85 @@
   opacity: 0.95;
 }
 
+.ai-briefing-banner {
+  padding-bottom: 32px;
+}
+
+.ai-briefing-banner .banner-content {
+  min-height: 420px;
+  align-items: center;
+}
+
+.ai-briefing-banner .banner-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.ai-briefing-banner .banner-image,
+.ai-briefing-banner .ai-briefing-cards {
+  height: 100%;
+}
+
+.ai-briefing-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 0;
+  width: 100%;
+  max-width: 520px;
+  min-height: 0;
+  justify-content: space-between;
+}
+
+.ai-briefing-cards .mood-text-section {
+  margin: 0 0 18px 0;
+  max-width: 100%;
+}
+
+.ai-briefing-cards .rotating-card-section {
+  margin: 0;
+  max-width: 100%;
+  width: 100%;
+  flex: 1;
+  align-items: stretch;
+}
+
+.ai-briefing-cards .ai-card-header h3 {
+  font-size: 1.05rem;
+}
+
+.ai-briefing-cards .ai-text {
+  font-size: 0.95rem;
+}
+
+.ai-briefing-button {
+  margin-top: 28px;
+  padding: 14px 32px;
+  border: 1px solid rgba(255, 248, 225, 0.6);
+  border-radius: 999px;
+  background: rgba(255, 248, 225, 0.18);
+  color: #fff8e1;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.ai-briefing-button:hover {
+  background: rgba(255, 248, 225, 0.3);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px);
+}
+
+.ai-briefing-button:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
 .banner-image {
   display: flex;
   justify-content: center;
@@ -185,6 +264,26 @@
     font-size: 1rem;
   }
 
+  .ai-briefing-banner .banner-text {
+    min-height: auto;
+  }
+
+  .ai-briefing-cards {
+    margin-top: 16px;
+    max-width: 100%;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .ai-briefing-cards .mood-text-section {
+    margin-bottom: 16px;
+  }
+
+  .ai-briefing-cards .ai-card {
+    min-height: 220px;
+    max-height: 220px;
+  }
+
   .action-container {
     grid-template-columns: 1fr;
     gap: 24px;
@@ -236,4 +335,3 @@
     font-size: 0.95rem;
   }
 }
-

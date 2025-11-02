@@ -15,6 +15,10 @@ const MainPage = () => {
     window.location.href = "/admin";
   };
 
+  const handleAIBriefing = () => {
+    window.location.href = "/ai-briefing";
+  };
+
   return (
     <>
       <Header />
@@ -34,6 +38,13 @@ const MainPage = () => {
                 딥딥빵빵은 AI를 통해 빠르고 편리한 빵 스캔 및 빵 추천, 결제
                 시스템을 제공합니다. 어쩌고저쩌고
               </p>
+              <button
+                type="button"
+                className="ai-briefing-button"
+                onClick={handleAIBriefing}
+              >
+                오늘의 AI 브리핑 보기
+              </button>
             </div>
           </div>
         </section>
@@ -67,4 +78,3 @@ const MainPage = () => {
 };
 
 export default MainPage;
-
