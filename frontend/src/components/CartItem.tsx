@@ -2,6 +2,7 @@
  * 장바구니 아이템 컴포넌트
  */
 
+import { forwardRef } from 'react'
 import { motion } from 'framer-motion'
 import { Minus, Plus, Trash2 } from 'lucide-react'
 import { CartItem as CartItemType } from '../store/useCartStore'
@@ -12,7 +13,7 @@ interface CartItemProps {
   index: number
 }
 
-export default function CartItem({ item, index }: CartItemProps) {
+const CartItem = forwardRef<HTMLDivElement, CartItemProps>(({ item, index }, ref) => {
   const { updateItemCount, removeItem } = useCartStore()
 
   const handleIncrement = () => {
@@ -35,6 +36,7 @@ export default function CartItem({ item, index }: CartItemProps) {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, x: 30 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -30 }}
@@ -108,4 +110,8 @@ export default function CartItem({ item, index }: CartItemProps) {
       </div>
     </motion.div>
   )
-}
+})
+
+CartItem.displayName = 'CartItem'
+
+export default CartItem

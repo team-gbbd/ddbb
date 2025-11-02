@@ -40,6 +40,12 @@ export const getToday = () => {
   return new Date().toISOString().split('T')[0];
 };
 
+export const getYesterday = () => {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return date.toISOString().split('T')[0];
+};
+
 export const getFirstDayOfMonth = () => {
   const date = new Date();
   date.setDate(1);

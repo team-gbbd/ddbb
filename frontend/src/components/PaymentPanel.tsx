@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { CreditCard, CheckCircle, RefreshCw, Loader2 } from 'lucide-react'
 import { useCartStore } from '../store/useCartStore'
 import { checkout } from '../api/breadApi'
+import axios from 'axios'
 import toast from 'react-hot-toast'
 
 export default function PaymentPanel() {
@@ -23,32 +24,108 @@ export default function PaymentPanel() {
     setIsProcessing(true)
 
     try {
-      const checkoutItems = items.map((item) => ({
-        bread_name: item.breadName,
-        count: item.count,
-      }))
-
-      const response = await checkout(checkoutItems)
-
-      if (response.success) {
-        // 성공 애니메이션
-        setIsSuccess(true)
-
-        // 2초 후 초기화
-        setTimeout(() => {
-          clearCart()
-          setIsSuccess(false)
-        }, 3000)
-
-        toast.success(`결제 완료!\n영수증 번호: ${response.receipt_number}`, {
-          icon: '✅',
-          duration: 4000,
-        })
+      // 포트원 결제 초기화
+      const { IMP } = window as any
+      if (!IMP) {
+        throw new Error('포트원 SDK가 로드되지 않았습니다')
       }
+
+      // 포트원 가맹점 식별코드 (실제 가맹점 코드로 변경 필요)
+      IMP.init('imp10391932') // 테스트 가맹점 코드
+
+      // 주문번호 생성
+      const merchantUid = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+      // 포트원 결제 요청
+      IMP.request_pay(
+        {
+          pg: 'kakaopay.TC0ONETIME', // 카카오페이
+          pay_method: 'card',
+          merchant_uid: merchantUid,
+          name: `빵 ${totalCount}개`,
+          amount: totalPrice,
+          buyer_email: 'customer@ddbb.com',
+          buyer_name: '고객',
+          buyer_tel: '010-0000-0000',
+        },
+        async (response: any) => {
+          if (response.success) {
+            // 결제 성공 시 백엔드에 결제 정보 저장
+            try {
+              const checkoutItems = items.map((item) => ({
+                bread_name: item.breadName,
+                count: item.count,
+              }))
+
+              // 1. AI Scanner에 영수증 번호 요청
+              console.log('🔹 Step 1: AI Scanner 영수증 요청')
+              const checkoutResponse = await checkout(checkoutItems)
+              console.log('✅ AI Scanner 응답:', checkoutResponse)
+
+              // 2. Java Backend에서 빵 이름으로 ID 조회 및 판매 데이터 저장
+              console.log('🔹 Step 2: Java Backend 빵 목록 조회')
+              const breadsResponse = await axios.get('/api/breads')
+              console.log('✅ 빵 목록:', breadsResponse.data)
+
+              const breadsMap = new Map(
+                breadsResponse.data.map((bread: any) => [bread.name, bread.id])
+              )
+              console.log('📋 빵 이름 → ID 매핑:', Array.from(breadsMap.entries()))
+
+              // 각 빵마다 개별 판매 기록 생성
+              console.log('🔹 Step 3: 판매 데이터 저장 시작')
+              const salesPromises = items.map(async (item) => {
+                const breadId = breadsMap.get(item.koreanName)
+                console.log(`  - ${item.koreanName} → breadId: ${breadId}`)
+
+                if (!breadId) {
+                  console.warn(`❌ 빵을 찾을 수 없습니다: ${item.koreanName}`)
+                  console.warn(`   사용 가능한 빵 목록:`, Array.from(breadsMap.keys()))
+                  return null
+                }
+
+                console.log(`  → POST /api/sales:`, { breadId, quantity: item.count })
+                const salesResponse = await axios.post('/api/sales', {
+                  breadId: breadId,
+                  quantity: item.count,
+                })
+                console.log(`  ✅ 저장 성공:`, salesResponse.data)
+                return salesResponse
+              })
+
+              const results = await Promise.all(salesPromises.filter(p => p !== null))
+              console.log('✅ Step 3 완료: 모든 판매 데이터 저장됨', results)
+
+              // 성공 애니메이션
+              setIsSuccess(true)
+
+              // 3초 후 초기화
+              setTimeout(() => {
+                clearCart()
+                setIsSuccess(false)
+              }, 3000)
+
+              toast.success(
+                `결제 완료!\n영수증 번호: ${checkoutResponse.receipt_number}\n결제 금액: ${totalPrice.toLocaleString()}원`,
+                {
+                  icon: '✅',
+                  duration: 5000,
+                }
+              )
+            } catch (error) {
+              console.error('Checkout save error:', error)
+              toast.error('결제는 완료되었으나 저장에 실패했습니다', { icon: '⚠️' })
+            }
+          } else {
+            // 결제 실패
+            toast.error(`결제 실패: ${response.error_msg}`, { icon: '❌' })
+          }
+          setIsProcessing(false)
+        }
+      )
     } catch (error) {
-      console.error('Checkout error:', error)
+      console.error('Payment error:', error)
       toast.error('결제 처리 중 오류가 발생했습니다', { icon: '❌' })
-    } finally {
       setIsProcessing(false)
     }
   }
