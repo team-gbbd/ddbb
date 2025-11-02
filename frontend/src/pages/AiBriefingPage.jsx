@@ -8,6 +8,7 @@ import "../styles/MainPage.css";
 import "../components/AiDashboard.css";
 import Header from "../assets/Header";
 import MainLogo from "../assets/MainLogo.png";
+import api from "../services/management/api";
 
 const initialMessages = {
   mood: "오늘의 베이커리 무드를 준비 중입니다...",
@@ -62,11 +63,13 @@ const AiBriefingPage = () => {
 
   const loadDashboard = useCallback(() => {
     setLoading(true);
-    const url = `http://localhost:8080/api/dashboard/insights?ts=${Date.now()}`;
-    fetch(url, { cache: "no-store" })
-      .then((res) => res.json())
-      .then((json) => {
-        console.log("📊 Dashboard API Response:", json);
+    api
+      .get("/dashboard/insights", {
+        params: { ts: Date.now() },
+      })
+      .then((response) => {
+        console.log("📊 Dashboard API Response:", response.data);
+        const json = response.data || {};
         setInsightData({
           mood: json.mood || initialMessages.mood,
           brief: json.brief || initialMessages.brief,
@@ -84,11 +87,13 @@ const AiBriefingPage = () => {
   const loadWeather = useCallback(() => {
     setWeatherLoading(true);
     setWeatherError(false);
-    const url = `http://localhost:8080/api/weather/today?ts=${Date.now()}`;
-    fetch(url, { cache: "no-store" })
-      .then((res) => res.json())
-      .then((json) => {
-        console.log("🌤️ Weather API Response:", json);
+    api
+      .get("/weather/today", {
+        params: { ts: Date.now() },
+      })
+      .then((response) => {
+        console.log("🌤️ Weather API Response:", response.data);
+        const json = response.data || {};
         setWeatherData({
           condition: json.condition || "",
           temperature:
