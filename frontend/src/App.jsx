@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainPage from "./pages/MainPage";
 import GuidePage from "./pages/GuidePage";
 import Payment from "./pages/Payment";
+import BreadScanner from "./pages/BreadScanner";
 import AdminDashboard from "./pages/management/AdminDashboard";
 import Inventory from "./pages/management/Inventory";
 import Statistics from "./pages/management/Statistics";
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<MainPage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/Payment" element={<Payment />} />
+        <Route path="/scanner" element={<BreadScanner />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/inventory" element={<Inventory />} />
         <Route path="/admin/statistics" element={<Statistics />} />

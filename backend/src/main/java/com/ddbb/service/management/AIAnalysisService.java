@@ -128,93 +128,227 @@ public class AIAnalysisService {
     }
     
     /**
-     * 판매량 예측 (이동 평균 기반)
+     * 판매량 예측 (요일 패턴 + 지수 이동평균 + 선형 회귀)
      */
     private Map<String, Integer> generatePredictions(Map<String, Integer> historical, int days) {
         Map<String, Integer> predictions = new LinkedHashMap<>();
-        
+
         if (historical.isEmpty()) return predictions;
-        
-        // 최근 7일 평균 계산
+
+        // 1. 요일별 판매 패턴 분석
+        Map<Integer, List<Integer>> dayOfWeekSales = new HashMap<>();
+        List<Map.Entry<String, Integer>> historicalEntries = new ArrayList<>(historical.entrySet());
+
+        for (Map.Entry<String, Integer> entry : historicalEntries) {
+            LocalDate date = LocalDate.parse(entry.getKey());
+            int dayOfWeek = date.getDayOfWeek().getValue(); // 1=월요일, 7=일요일
+            dayOfWeekSales.computeIfAbsent(dayOfWeek, k -> new ArrayList<>()).add(entry.getValue());
+        }
+
+        // 요일별 평균 계산
+        Map<Integer, Double> dayOfWeekAvg = new HashMap<>();
+        for (Map.Entry<Integer, List<Integer>> entry : dayOfWeekSales.entrySet()) {
+            double avg = entry.getValue().stream().mapToInt(Integer::intValue).average().orElse(0);
+            dayOfWeekAvg.put(entry.getKey(), avg);
+        }
+
+        // 전체 평균 대비 요일별 배율 계산 (주말 효과 등)
+        double overallAvg = dayOfWeekAvg.values().stream().mapToDouble(Double::doubleValue).average().orElse(1);
+        Map<Integer, Double> dayOfWeekMultiplier = new HashMap<>();
+        for (Map.Entry<Integer, Double> entry : dayOfWeekAvg.entrySet()) {
+            dayOfWeekMultiplier.put(entry.getKey(), entry.getValue() / overallAvg);
+        }
+
+        // 2. 지수 이동평균 (EMA) 계산 - 최근 데이터에 더 큰 가중치
         List<Integer> recentSales = new ArrayList<>(historical.values());
-        int lookback = Math.min(7, recentSales.size());
-        double avg = recentSales.subList(Math.max(0, recentSales.size() - lookback), recentSales.size())
-                .stream()
-                .mapToInt(Integer::intValue)
-                .average()
-                .orElse(0);
-        
-        // 추세 계산 (간단한 선형 회귀)
+        int lookback = Math.min(14, recentSales.size()); // 최근 14일
+        double ema = recentSales.get(Math.max(0, recentSales.size() - lookback));
+        double alpha = 2.0 / (lookback + 1); // 평활 계수
+
+        for (int i = Math.max(0, recentSales.size() - lookback + 1); i < recentSales.size(); i++) {
+            ema = alpha * recentSales.get(i) + (1 - alpha) * ema;
+        }
+
+        // 3. 선형 회귀로 트렌드 계산 (최근 14일 기준)
         double trend = 0;
         if (recentSales.size() >= 2) {
-            int lastIndex = recentSales.size() - 1;
-            trend = (recentSales.get(lastIndex) - recentSales.get(Math.max(0, lastIndex - 7))) / 7.0;
+            List<Integer> trendData = recentSales.subList(
+                Math.max(0, recentSales.size() - 14),
+                recentSales.size()
+            );
+
+            // 최소제곱법으로 기울기 계산
+            double n = trendData.size();
+            double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+
+            for (int i = 0; i < trendData.size(); i++) {
+                sumX += i;
+                sumY += trendData.get(i);
+                sumXY += i * trendData.get(i);
+                sumX2 += i * i;
+            }
+
+            trend = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
         }
-        
+
         // 마지막 날짜 가져오기
         String lastDateStr = historical.keySet().stream().reduce((a, b) -> b).orElse(LocalDate.now().toString());
         LocalDate lastDate = LocalDate.parse(lastDateStr);
-        
-        // 예측 생성
+
+        // 4. 예측 생성 (EMA + 트렌드 + 요일 패턴)
         for (int i = 1; i <= days; i++) {
             LocalDate futureDate = lastDate.plusDays(i);
-            int predicted = (int) Math.max(0, avg + (trend * i));
+            int dayOfWeek = futureDate.getDayOfWeek().getValue();
+
+            // 기본 예측 = EMA + 트렌드
+            double basePrediction = ema + (trend * i);
+
+            // 요일 배율 적용
+            double dayMultiplier = dayOfWeekMultiplier.getOrDefault(dayOfWeek, 1.0);
+            int predicted = (int) Math.max(0, Math.round(basePrediction * dayMultiplier));
+
             predictions.put(futureDate.toString(), predicted);
         }
-        
+
         return predictions;
     }
     
     /**
-     * 수익 예측
+     * 수익 예측 (요일 패턴 + 지수 이동평균 + 선형 회귀)
      */
     private Map<String, Double> generateRevenuePredictions(Map<String, Double> historical, int days) {
         Map<String, Double> predictions = new LinkedHashMap<>();
-        
+
         if (historical.isEmpty()) return predictions;
-        
-        // 최근 7일 평균 계산
+
+        // 1. 요일별 수익 패턴 분석
+        Map<Integer, List<Double>> dayOfWeekRevenue = new HashMap<>();
+        List<Map.Entry<String, Double>> historicalEntries = new ArrayList<>(historical.entrySet());
+
+        for (Map.Entry<String, Double> entry : historicalEntries) {
+            LocalDate date = LocalDate.parse(entry.getKey());
+            int dayOfWeek = date.getDayOfWeek().getValue();
+            dayOfWeekRevenue.computeIfAbsent(dayOfWeek, k -> new ArrayList<>()).add(entry.getValue());
+        }
+
+        // 요일별 평균 계산
+        Map<Integer, Double> dayOfWeekAvg = new HashMap<>();
+        for (Map.Entry<Integer, List<Double>> entry : dayOfWeekRevenue.entrySet()) {
+            double avg = entry.getValue().stream().mapToDouble(Double::doubleValue).average().orElse(0);
+            dayOfWeekAvg.put(entry.getKey(), avg);
+        }
+
+        // 전체 평균 대비 요일별 배율
+        double overallAvg = dayOfWeekAvg.values().stream().mapToDouble(Double::doubleValue).average().orElse(1);
+        Map<Integer, Double> dayOfWeekMultiplier = new HashMap<>();
+        for (Map.Entry<Integer, Double> entry : dayOfWeekAvg.entrySet()) {
+            dayOfWeekMultiplier.put(entry.getKey(), entry.getValue() / overallAvg);
+        }
+
+        // 2. 지수 이동평균 (EMA)
         List<Double> recentRevenue = new ArrayList<>(historical.values());
-        int lookback = Math.min(7, recentRevenue.size());
-        double avg = recentRevenue.subList(Math.max(0, recentRevenue.size() - lookback), recentRevenue.size())
-                .stream()
-                .mapToDouble(Double::doubleValue)
-                .average()
-                .orElse(0);
-        
-        // 추세 계산
+        int lookback = Math.min(14, recentRevenue.size());
+        double ema = recentRevenue.get(Math.max(0, recentRevenue.size() - lookback));
+        double alpha = 2.0 / (lookback + 1);
+
+        for (int i = Math.max(0, recentRevenue.size() - lookback + 1); i < recentRevenue.size(); i++) {
+            ema = alpha * recentRevenue.get(i) + (1 - alpha) * ema;
+        }
+
+        // 3. 선형 회귀로 트렌드 계산
         double trend = 0;
         if (recentRevenue.size() >= 2) {
-            int lastIndex = recentRevenue.size() - 1;
-            trend = (recentRevenue.get(lastIndex) - recentRevenue.get(Math.max(0, lastIndex - 7))) / 7.0;
+            List<Double> trendData = recentRevenue.subList(
+                Math.max(0, recentRevenue.size() - 14),
+                recentRevenue.size()
+            );
+
+            double n = trendData.size();
+            double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+
+            for (int i = 0; i < trendData.size(); i++) {
+                sumX += i;
+                sumY += trendData.get(i);
+                sumXY += i * trendData.get(i);
+                sumX2 += i * i;
+            }
+
+            trend = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
         }
-        
+
         // 마지막 날짜
         String lastDateStr = historical.keySet().stream().reduce((a, b) -> b).orElse(LocalDate.now().toString());
         LocalDate lastDate = LocalDate.parse(lastDateStr);
-        
-        // 예측 생성
+
+        // 4. 예측 생성 (EMA + 트렌드 + 요일 패턴)
         for (int i = 1; i <= days; i++) {
             LocalDate futureDate = lastDate.plusDays(i);
-            double predicted = Math.max(0, avg + (trend * i));
+            int dayOfWeek = futureDate.getDayOfWeek().getValue();
+
+            double basePrediction = ema + (trend * i);
+            double dayMultiplier = dayOfWeekMultiplier.getOrDefault(dayOfWeek, 1.0);
+            double predicted = Math.max(0, basePrediction * dayMultiplier);
+
             predictions.put(futureDate.toString(), predicted);
         }
-        
+
         return predictions;
     }
     
     /**
-     * 빵별 판매량 예측
+     * 빵별 판매량 예측 (재고 회전율 + 성장 트렌드 반영)
      */
     private Map<String, Integer> generateBreadPredictions(List<InventoryAnalysisDto> inventoryData) {
         Map<String, Integer> predictions = new LinkedHashMap<>();
-        
+
         for (InventoryAnalysisDto item : inventoryData) {
-            // 다음 주 예측 판매량 = 일평균 * 7
-            int weeklyPrediction = (int) (item.getAverageDailySales() * 7);
+            double dailyAvg = item.getAverageDailySales();
+
+            // 1. 재고 상태 기반 조정
+            double stockAdjustment = 1.0;
+            int daysOfStock = item.getDaysOfStock();
+
+            if (daysOfStock < 3) {
+                // 재고 부족 임박 - 판매 기회 손실 가능성 고려 (보수적 예측)
+                stockAdjustment = 0.9;
+            } else if (daysOfStock > 14) {
+                // 과잉 재고 - 판매 둔화 가능성
+                stockAdjustment = 0.85;
+            } else if (daysOfStock >= 5 && daysOfStock <= 10) {
+                // 적정 재고 - 안정적 판매 예상
+                stockAdjustment = 1.05;
+            }
+
+            // 2. 판매율 기반 조정 (인기도 반영)
+            double sellThroughRate = item.getCurrentStock() > 0
+                    ? (dailyAvg / item.getCurrentStock() * 100)
+                    : 0;
+
+            double popularityAdjustment = 1.0;
+            if (sellThroughRate > 20) {
+                // 고회전율 제품 - 성장 가능성
+                popularityAdjustment = 1.1;
+            } else if (sellThroughRate < 5) {
+                // 저회전율 제품 - 판매 부진
+                popularityAdjustment = 0.9;
+            }
+
+            // 3. 주말 효과 추가 (주중 5일 + 주말 2일, 주말 20% 증가 가정)
+            double weekdayTotal = dailyAvg * 5; // 평일 5일
+            double weekendTotal = dailyAvg * 1.2 * 2; // 주말 2일 (20% 증가)
+            double weeklyBaseEstimate = weekdayTotal + weekendTotal;
+
+            // 4. 최종 예측 = 기본 추정치 × 재고 조정 × 인기도 조정
+            int weeklyPrediction = (int) Math.round(
+                    weeklyBaseEstimate * stockAdjustment * popularityAdjustment
+            );
+
+            // 최소 판매량 보장 (0 방지)
+            weeklyPrediction = Math.max(1, weeklyPrediction);
+
             predictions.put(item.getBreadName(), weeklyPrediction);
         }
-        
+
         return predictions;
     }
     
@@ -411,9 +545,9 @@ public class AIAnalysisService {
             ChatMessage userMessage = new ChatMessage("user", prompt);
             
             ChatCompletionRequest completionRequest = ChatCompletionRequest.builder()
-                    .model("gpt-4")
+                    .model("gpt-4o-mini")
                     .messages(Arrays.asList(systemMessage, userMessage))
-                    .temperature(0.7)
+                    .temperature(0.3)  // 일관성 향상: 재고 관리는 정확성/일관성 우선 (0.7 → 0.3)
                     .maxTokens(2000)
                     .build();
             

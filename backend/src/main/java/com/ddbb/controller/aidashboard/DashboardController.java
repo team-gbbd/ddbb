@@ -1,94 +1,61 @@
 package com.ddbb.controller.aidashboard;
 
+import com.ddbb.dto.aidashboard.DashboardChartDto;
 import com.ddbb.service.aidashboard.WeatherService;
 import com.ddbb.service.aidashboard.WeatherService.WeatherSummary;
+import com.ddbb.service.aidashboard.DashboardAIService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/dashboard")
+@RequiredArgsConstructor
 public class DashboardController {
 
     private final WeatherService weatherService;
-
-    public DashboardController(WeatherService weatherService) {
-        this.weatherService = weatherService;
-    }
+    private final DashboardAIService dashboardAIService;
 
     @GetMapping("/insights")
     public Map<String, Object> getDashboardInsights() {
-        WeatherSummary weather = weatherService.fetchSeoulWeather();
+        log.info("AI 대시보드 인사이트 요청");
 
-        String temperatureText = weather.temperature() != null
-                ? String.format("서울 현재 %.1f°C", weather.temperature())
-                : "서울 현재 기온";
+        try {
+            // 실시간 데이터 기반 AI 인사이트 생성
+            return dashboardAIService.generateDashboardInsights();
+        } catch (Exception e) {
+            log.error("AI 대시보드 생성 중 오류 발생", e);
 
-        String conditionPhrase = weather.description() != null
-                ? formatConditionForSentence(weather.description())
-                : "편안한 날씨";
-
-        String mood = weather.success()
-                ? String.format("%s, %s라 소금빵이 특히 인기입니다.", temperatureText, conditionPhrase)
-                : "날씨 정보를 불러오지 못했지만, 산뜻한 소금빵으로 매장을 밝혀보세요.";
-
-        String salesBrief = "오전 시간대 소금빵이 강세를 보이며, 점심 이후 크로와상이 뒤를 이었습니다.";
-
-        String stockInsight = "단팥빵 재고가 부족해 오전에 품절될 가능성이 있습니다.";
-
-        String strategy = buildStrategySuggestion(weather, conditionPhrase, temperatureText);
-
-        return Map.of(
-                "mood", mood,
-                "brief", salesBrief,
-                "insight", stockInsight,
-                "strategy", strategy
-        );
+            // 폴백: 기본 메시지
+            return Map.of(
+                    "mood", "데이터를 불러오는 중 오류가 발생했습니다.",
+                    "brief", "판매 데이터를 확인할 수 없습니다.",
+                    "insight", "재고 데이터를 확인할 수 없습니다.",
+                    "strategy", "잠시 후 다시 시도해주세요."
+            );
+        }
     }
 
-    private String formatConditionForSentence(String condition) {
-        return switch (condition) {
-            case "맑음" -> "맑은 날씨";
-            case "부분적으로 흐림" -> "구름이 드문 날씨";
-            case "안개" -> "안개 낀 아침";
-            case "이슬비" -> "부슬비 내리는 날씨";
-            case "얼어붙는 이슬비" -> "얼어붙는 이슬비가 내리는 날씨";
-            case "비" -> "비 오는 날씨";
-            case "얼어붙는 비" -> "얼어붙는 비가 내리는 날씨";
-            case "눈" -> "눈 내리는 날씨";
-            case "진눈깨비" -> "진눈깨비가 내리는 날씨";
-            case "소나기" -> "소나기가 지나는 날씨";
-            case "눈 소나기" -> "눈 소나기가 예보된 날씨";
-            case "천둥번개" -> "천둥번개가 예보된 날씨";
-            case "천둥번개와 우박" -> "천둥번개와 우박이 예보된 날씨";
-            default -> condition + " 분위기";
-        };
-    }
+    /**
+     * 차트 데이터 조회 (프론트엔드 그래프용)
+     * GET /api/dashboard/charts
+     */
+    @GetMapping("/charts")
+    public ResponseEntity<DashboardChartDto> getChartData() {
+        log.info("차트 데이터 요청");
 
-    private String buildStrategySuggestion(WeatherSummary weather, String conditionPhrase, String temperatureText) {
-        if (!weather.success()) {
-            return "단팥빵 2+1 이벤트로 재고를 효율적으로 소진해보세요.";
+        try {
+            DashboardChartDto chartData = dashboardAIService.generateChartData();
+            return ResponseEntity.ok(chartData);
+        } catch (Exception e) {
+            log.error("차트 데이터 생성 중 오류 발생", e);
+            return ResponseEntity.internalServerError().build();
         }
-
-        boolean hasCondition = weather.description() != null;
-        boolean hasTemperature = weather.temperature() != null;
-
-        if (hasCondition && hasTemperature) {
-            return String.format("%s와 %s를 고려해 단팥빵 2+1 이벤트로 재고를 효율적으로 소진해보세요.",
-                    conditionPhrase,
-                    String.format("%.1f°C 기온", weather.temperature()));
-        }
-
-        if (hasCondition) {
-            return String.format("%s에 맞춰 단팥빵 2+1 이벤트로 재고를 효율적으로 소진해보세요.", conditionPhrase);
-        }
-
-        if (hasTemperature) {
-            return String.format("%s에 맞춰 단팥빵 2+1 이벤트로 재고를 효율적으로 소진해보세요.", temperatureText);
-        }
-
-        return "단팥빵 2+1 이벤트로 재고를 효율적으로 소진해보세요.";
     }
 }
