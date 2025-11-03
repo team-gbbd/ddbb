@@ -1,9 +1,6 @@
 package com.ddbb.service.management;
 
-import com.ddbb.dto.management.AIAnalysisRequest;
-import com.ddbb.dto.management.AIAnalysisResponse;
-import com.ddbb.dto.management.ChartDataDto;
-import com.ddbb.dto.management.InventoryAnalysisDto;
+import com.ddbb.dto.management.*;
 import com.ddbb.entity.management.Inventory;
 import com.ddbb.entity.management.Sales;
 import com.ddbb.repository.management.InventoryRepository;
@@ -31,6 +28,7 @@ public class AIAnalysisService {
     
     private final SalesRepository salesRepository;
     private final InventoryRepository inventoryRepository;
+    private final SalesPredictionAI salesPredictionAI;  // LangChain4j AI Service
     
     @Value("${openai.api.key}")
     private String openaiApiKey;
@@ -73,9 +71,6 @@ public class AIAnalysisService {
      * 차트용 데이터 생성
      */
     private ChartDataDto buildChartData(AIAnalysisRequest request, List<InventoryAnalysisDto> inventoryData) {
-        LocalDateTime startDateTime = request.getStartDate().atStartOfDay();
-        LocalDateTime endDateTime = request.getEndDate().atTime(23, 59, 59);
-        
         // 과거 데이터 수집
         Map<String, Integer> historicalSales = new LinkedHashMap<>();
         Map<String, Double> historicalRevenue = new LinkedHashMap<>();
@@ -103,10 +98,15 @@ public class AIAnalysisService {
             breadHistoricalSales.put(item.getBreadName(), item.getTotalSold());
         }
         
-        // 예측 데이터 생성 (AI 기반 예측)
-        Map<String, Integer> predictedSales = generatePredictions(historicalSales, 7); // 7일 예측
-        Map<String, Double> predictedRevenue = generateRevenuePredictions(historicalRevenue, 7);
-        Map<String, Integer> breadPredictedSales = generateBreadPredictions(inventoryData);
+        // 예측 데이터 생성 (LangChain4j 기반 AI 예측)
+        log.info("🤖 === AI 예측 데이터 생성 시작 ===");
+        log.info("📈 Step 1/3: 판매량 예측 호출...");
+        Map<String, Integer> predictedSales = generateAIPredictions(historicalSales, 7); // 7일 예측
+        log.info("📈 Step 2/3: 수익 예측 호출...");
+        Map<String, Double> predictedRevenue = generateAIRevenuePredictions(historicalRevenue, 7);
+        log.info("📈 Step 3/3: 빵별 판매량 예측 호출...");
+        Map<String, Integer> breadPredictedSales = generateAIBreadPredictions(inventoryData);
+        log.info("✅ === AI 예측 데이터 생성 완료 ===");
         
         // 성장률 계산
         List<ChartDataDto.GrowthRateDto> growthRates = calculateGrowthRates(historicalSales);
@@ -128,7 +128,133 @@ public class AIAnalysisService {
     }
     
     /**
-     * 판매량 예측 (이동 평균 기반)
+     * LangChain4j 기반 판매량 예측 (구조화된 출력으로 일관성 보장)
+     */
+    private Map<String, Integer> generateAIPredictions(Map<String, Integer> historical, int days) {
+        try {
+            // 과거 데이터를 문자열로 포맷팅
+            StringBuilder historicalData = new StringBuilder();
+            historical.forEach((date, quantity) -> {
+                historicalData.append(String.format("%s: %d개\n", date, quantity));
+            });
+            
+            // 마지막 날짜 계산
+            String lastDateStr = historical.keySet().stream()
+                    .reduce((a, b) -> b)
+                    .orElse(LocalDate.now().toString());
+            
+            log.info("🔥 LangChain4j 판매량 예측 시작 - 예측 일수: {}일", days);
+            log.info("📊 과거 데이터 포인트: {}개, 마지막 날짜: {}", historical.size(), lastDateStr);
+            
+            // LangChain4j AI Service 호출
+            PredictionResult result = salesPredictionAI.predictSales(
+                    historicalData.toString(),
+                    days,
+                    lastDateStr
+            );
+            
+            // 통계적 신뢰도 계산 (AI가 반환한 값 대신 통계로 재계산)
+            double calculatedConfidence = calculateSalesConfidence(historical, result.getPredictions());
+            result.setConfidence(calculatedConfidence);
+            
+            log.info("✅ 판매량 예측 완료");
+            log.info("   📈 예측 개수: {}개", result.getPredictions().size());
+            log.info("   🎯 통계적 신뢰도: {}% ({})", 
+                    String.format("%.1f", calculatedConfidence * 100),
+                    String.format("%.3f", calculatedConfidence));
+            log.info("   💡 예측 근거: {}", result.getReasoning());
+            
+            return result.getPredictions();
+            
+        } catch (Exception e) {
+            log.error("❌ LangChain4j 예측 실패, 백업 예측 방식 사용: {}", e.getMessage());
+            return generatePredictions(historical, days);
+        }
+    }
+    
+    /**
+     * LangChain4j 기반 수익 예측
+     */
+    private Map<String, Double> generateAIRevenuePredictions(Map<String, Double> historical, int days) {
+        try {
+            StringBuilder historicalData = new StringBuilder();
+            historical.forEach((date, revenue) -> {
+                historicalData.append(String.format("%s: %.0f원\n", date, revenue));
+            });
+            
+            String lastDateStr = historical.keySet().stream()
+                    .reduce((a, b) -> b)
+                    .orElse(LocalDate.now().toString());
+            
+            log.info("🔥 LangChain4j 수익 예측 시작 - 예측 일수: {}일", days);
+            log.info("📊 과거 수익 데이터 포인트: {}개, 마지막 날짜: {}", historical.size(), lastDateStr);
+            
+            RevenuePredictionResult result = salesPredictionAI.predictRevenue(
+                    historicalData.toString(),
+                    days,
+                    lastDateStr
+            );
+            
+            // 통계적 신뢰도 계산
+            double calculatedConfidence = calculateRevenueConfidence(historical, result.getPredictions());
+            result.setConfidence(calculatedConfidence);
+            
+            log.info("✅ 수익 예측 완료");
+            log.info("   📈 예측 개수: {}개", result.getPredictions().size());
+            log.info("   🎯 통계적 신뢰도: {}% ({})", 
+                    String.format("%.1f", calculatedConfidence * 100),
+                    String.format("%.3f", calculatedConfidence));
+            log.info("   💡 예측 근거: {}", result.getReasoning());
+            
+            return result.getPredictions();
+            
+        } catch (Exception e) {
+            log.error("❌ LangChain4j 수익 예측 실패, 백업 예측 방식 사용: {}", e.getMessage());
+            return generateRevenuePredictions(historical, days);
+        }
+    }
+    
+    /**
+     * LangChain4j 기반 빵별 판매량 예측
+     */
+    private Map<String, Integer> generateAIBreadPredictions(List<InventoryAnalysisDto> inventoryData) {
+        try {
+            StringBuilder inventoryInfo = new StringBuilder();
+            for (InventoryAnalysisDto item : inventoryData) {
+                inventoryInfo.append(String.format("- %s: 일평균 %.1f개 판매, 현재 재고 %d개, 총 판매 %d개\n",
+                    item.getBreadName(),
+                    item.getAverageDailySales(),
+                    item.getCurrentStock(),
+                    item.getTotalSold()));
+            }
+            
+            log.info("🔥 LangChain4j 빵별 판매량 예측 시작 - 빵 종류: {}개", inventoryData.size());
+            
+            BreadPredictionResult result = salesPredictionAI.predictBreadSales(
+                    inventoryInfo.toString()
+            );
+            
+            // 통계적 신뢰도 계산
+            double calculatedConfidence = calculateBreadConfidence(inventoryData, result.getPredictions());
+            result.setConfidence(calculatedConfidence);
+            
+            log.info("✅ 빵별 판매량 예측 완료");
+            log.info("   📈 예측 개수: {}개", result.getPredictions().size());
+            log.info("   🎯 통계적 신뢰도: {}% ({})", 
+                    String.format("%.1f", calculatedConfidence * 100),
+                    String.format("%.3f", calculatedConfidence));
+            log.info("   💡 예측 근거: {}", result.getReasoning());
+            
+            return result.getPredictions();
+            
+        } catch (Exception e) {
+            log.error("❌ LangChain4j 빵별 예측 실패, 백업 예측 방식 사용: {}", e.getMessage());
+            return generateBreadPredictions(inventoryData);
+        }
+    }
+    
+    /**
+     * 판매량 예측 (이동 평균 기반) - 백업용
      */
     private Map<String, Integer> generatePredictions(Map<String, Integer> historical, int days) {
         Map<String, Integer> predictions = new LinkedHashMap<>();
@@ -411,7 +537,7 @@ public class AIAnalysisService {
             ChatMessage userMessage = new ChatMessage("user", prompt);
             
             ChatCompletionRequest completionRequest = ChatCompletionRequest.builder()
-                    .model("gpt-4")
+                    .model("gpt-4o-mini")
                     .messages(Arrays.asList(systemMessage, userMessage))
                     .temperature(0.7)
                     .maxTokens(2000)
@@ -480,6 +606,277 @@ public class AIAnalysisService {
                 .analysisType(analysisType)
                 .generatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
                 .build();
+    }
+    
+    /**
+     * 판매량 예측 신뢰도 계산 (통계적 방법)
+     */
+    private double calculateSalesConfidence(Map<String, Integer> historical, Map<String, Integer> predicted) {
+        if (historical.isEmpty()) {
+            return 0.75; // 데이터 부족 시 기본값
+        }
+        
+        double confidence = 1.0; // 최대 신뢰도에서 시작
+        
+        // 1. 데이터 양 평가 (30% 가중치)
+        int dataPoints = historical.size();
+        double dataQualityScore;
+        if (dataPoints >= 30) {
+            dataQualityScore = 1.0;
+        } else if (dataPoints >= 14) {
+            dataQualityScore = 0.95;
+        } else if (dataPoints >= 7) {
+            dataQualityScore = 0.85;
+        } else {
+            dataQualityScore = 0.70;
+        }
+        
+        // 2. 데이터 변동성 평가 (40% 가중치)
+        List<Integer> values = new ArrayList<>(historical.values());
+        double mean = values.stream().mapToInt(Integer::intValue).average().orElse(0);
+        double variance = values.stream()
+                .mapToDouble(v -> Math.pow(v - mean, 2))
+                .average()
+                .orElse(0);
+        double stdDev = Math.sqrt(variance);
+        double cv = mean > 0 ? (stdDev / mean) : 0; // 변동계수 (Coefficient of Variation)
+        
+        double volatilityScore;
+        if (cv <= 0.15) {
+            volatilityScore = 1.0;  // 변동성 매우 낮음
+        } else if (cv <= 0.25) {
+            volatilityScore = 0.95; // 변동성 낮음
+        } else if (cv <= 0.35) {
+            volatilityScore = 0.90; // 변동성 보통
+        } else if (cv <= 0.50) {
+            volatilityScore = 0.85; // 변동성 높음
+        } else {
+            volatilityScore = 0.75; // 변동성 매우 높음
+        }
+        
+        // 3. 추세 안정성 평가 (30% 가중치)
+        double trendScore = 1.0;
+        if (values.size() >= 3) {
+            // 최근 데이터의 급격한 변화 체크
+            int lastIndex = values.size() - 1;
+            int recentChanges = 0;
+            int significantChanges = 0;
+            
+            for (int i = Math.max(0, lastIndex - 6); i < lastIndex; i++) {
+                double changeRate = values.get(i) > 0 
+                        ? Math.abs((values.get(i + 1) - values.get(i)) * 100.0 / values.get(i))
+                        : 0;
+                recentChanges++;
+                if (changeRate > 30) {
+                    significantChanges++;
+                }
+            }
+            
+            if (recentChanges > 0) {
+                double instabilityRatio = (double) significantChanges / recentChanges;
+                if (instabilityRatio <= 0.1) {
+                    trendScore = 1.0;
+                } else if (instabilityRatio <= 0.3) {
+                    trendScore = 0.95;
+                } else if (instabilityRatio <= 0.5) {
+                    trendScore = 0.85;
+                } else {
+                    trendScore = 0.75;
+                }
+            }
+        }
+        
+        // 가중 평균 계산
+        confidence = (dataQualityScore * 0.30) + (volatilityScore * 0.40) + (trendScore * 0.30);
+        
+        // 최소 75%, 최대 99%로 제한
+        confidence = Math.max(0.75, Math.min(0.99, confidence));
+        
+        log.info("   📊 [판매량] 신뢰도 상세 - 데이터품질: {}, 변동성: {}, 추세안정성: {}, 최종: {}", 
+                String.format("%.2f", dataQualityScore), 
+                String.format("%.2f", volatilityScore), 
+                String.format("%.2f", trendScore), 
+                String.format("%.3f", confidence));
+        
+        return confidence;
+    }
+    
+    /**
+     * 수익 예측 신뢰도 계산 (통계적 방법 - 수익 특화)
+     */
+    private double calculateRevenueConfidence(Map<String, Double> historical, Map<String, Double> predicted) {
+        if (historical.isEmpty()) {
+            return 0.75;
+        }
+        
+        double confidence = 1.0;
+        
+        // 1. 데이터 양 평가 (25% 가중치)
+        int dataPoints = historical.size();
+        double dataQualityScore;
+        if (dataPoints >= 30) {
+            dataQualityScore = 1.0;
+        } else if (dataPoints >= 14) {
+            dataQualityScore = 0.95;
+        } else if (dataPoints >= 7) {
+            dataQualityScore = 0.85;
+        } else {
+            dataQualityScore = 0.70;
+        }
+        
+        // 2. 데이터 변동성 평가 (45% 가중치 - 수익은 변동성에 더 민감)
+        List<Double> values = new ArrayList<>(historical.values());
+        double mean = values.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double variance = values.stream()
+                .mapToDouble(v -> Math.pow(v - mean, 2))
+                .average()
+                .orElse(0);
+        double stdDev = Math.sqrt(variance);
+        double cv = mean > 0 ? (stdDev / mean) : 0;
+        
+        double volatilityScore;
+        if (cv <= 0.12) {           // 수익은 더 엄격한 기준
+            volatilityScore = 1.0;
+        } else if (cv <= 0.20) {
+            volatilityScore = 0.93;
+        } else if (cv <= 0.30) {
+            volatilityScore = 0.88;
+        } else if (cv <= 0.45) {
+            volatilityScore = 0.82;
+        } else {
+            volatilityScore = 0.75;
+        }
+        
+        // 3. 추세 안정성 평가 (20% 가중치)
+        double trendScore = 1.0;
+        if (values.size() >= 3) {
+            int lastIndex = values.size() - 1;
+            int recentChanges = 0;
+            int significantChanges = 0;
+            
+            for (int i = Math.max(0, lastIndex - 6); i < lastIndex; i++) {
+                double changeRate = values.get(i) > 0 
+                        ? Math.abs((values.get(i + 1) - values.get(i)) * 100.0 / values.get(i))
+                        : 0;
+                recentChanges++;
+                if (changeRate > 25) {  // 수익은 25% 이상 변화를 중요시
+                    significantChanges++;
+                }
+            }
+            
+            if (recentChanges > 0) {
+                double instabilityRatio = (double) significantChanges / recentChanges;
+                if (instabilityRatio <= 0.1) {
+                    trendScore = 1.0;
+                } else if (instabilityRatio <= 0.3) {
+                    trendScore = 0.93;
+                } else if (instabilityRatio <= 0.5) {
+                    trendScore = 0.82;
+                } else {
+                    trendScore = 0.75;
+                }
+            }
+        }
+        
+        // 4. 수익 규모 평가 (10% 가중치 - 수익 특화 요소)
+        double revenueScaleScore = 1.0;
+        if (mean >= 500000) {        // 50만원 이상 - 안정적인 비즈니스
+            revenueScaleScore = 1.0;
+        } else if (mean >= 300000) { // 30만원 이상
+            revenueScaleScore = 0.95;
+        } else if (mean >= 100000) { // 10만원 이상
+            revenueScaleScore = 0.90;
+        } else if (mean >= 50000) {  // 5만원 이상
+            revenueScaleScore = 0.85;
+        } else {
+            revenueScaleScore = 0.80; // 낮은 수익은 예측 어려움
+        }
+        
+        // 가중 평균 계산 (수익 예측 특화 가중치)
+        confidence = (dataQualityScore * 0.25) + (volatilityScore * 0.45) + (trendScore * 0.20) + (revenueScaleScore * 0.10);
+        confidence = Math.max(0.75, Math.min(0.99, confidence));
+        
+        log.info("   📊 [수익] 신뢰도 상세 - 데이터품질: {}, 변동성: {}, 추세안정성: {}, 수익규모: {}, 최종: {}", 
+                String.format("%.2f", dataQualityScore), 
+                String.format("%.2f", volatilityScore), 
+                String.format("%.2f", trendScore),
+                String.format("%.2f", revenueScaleScore),
+                String.format("%.3f", confidence));
+        
+        return confidence;
+    }
+    
+    /**
+     * 빵별 판매량 예측 신뢰도 계산 (통계적 방법)
+     */
+    private double calculateBreadConfidence(List<InventoryAnalysisDto> inventoryData, Map<String, Integer> predicted) {
+        if (inventoryData.isEmpty()) {
+            return 0.75;
+        }
+        
+        double totalConfidence = 0.0;
+        int validItems = 0;
+        
+        for (InventoryAnalysisDto item : inventoryData) {
+            double itemConfidence = 1.0;
+            
+            // 1. 판매 데이터 충분성 평가 (40% 가중치)
+            int totalSold = item.getTotalSold();
+            double avgDailySales = item.getAverageDailySales();
+            
+            double dataQualityScore;
+            if (totalSold >= 100 && avgDailySales >= 5) {
+                dataQualityScore = 1.0;
+            } else if (totalSold >= 50 && avgDailySales >= 3) {
+                dataQualityScore = 0.95;
+            } else if (totalSold >= 20 && avgDailySales >= 1) {
+                dataQualityScore = 0.85;
+            } else {
+                dataQualityScore = 0.75;
+            }
+            
+            // 2. 일평균 판매량의 안정성 평가 (30% 가중치)
+            double stabilityScore;
+            if (avgDailySales >= 10) {
+                stabilityScore = 1.0;  // 판매량 많고 안정적
+            } else if (avgDailySales >= 5) {
+                stabilityScore = 0.95;
+            } else if (avgDailySales >= 2) {
+                stabilityScore = 0.90;
+            } else if (avgDailySales >= 1) {
+                stabilityScore = 0.85;
+            } else {
+                stabilityScore = 0.75; // 판매량 적어 불안정
+            }
+            
+            // 3. 재고 대비 판매 비율 평가 (30% 가중치)
+            int currentStock = item.getCurrentStock();
+            double turnoverScore = 1.0;
+            if (avgDailySales > 0) {
+                double daysOfStock = currentStock / avgDailySales;
+                if (daysOfStock >= 3 && daysOfStock <= 14) {
+                    turnoverScore = 1.0; // 적정 재고 수준
+                } else if (daysOfStock >= 1 && daysOfStock < 3) {
+                    turnoverScore = 0.90; // 재고 부족 가능
+                } else if (daysOfStock > 14 && daysOfStock <= 30) {
+                    turnoverScore = 0.85; // 과잉 재고 가능
+                } else {
+                    turnoverScore = 0.75; // 재고 불균형
+                }
+            }
+            
+            itemConfidence = (dataQualityScore * 0.40) + (stabilityScore * 0.30) + (turnoverScore * 0.30);
+            totalConfidence += itemConfidence;
+            validItems++;
+        }
+        
+        double confidence = validItems > 0 ? totalConfidence / validItems : 0.75;
+        confidence = Math.max(0.75, Math.min(0.99, confidence));
+        
+        log.info("   📊 [빵별] 신뢰도 상세 - 평균 신뢰도: {}, 분석 항목 수: {}", 
+                String.format("%.3f", confidence), validItems);
+        
+        return confidence;
     }
 }
 
