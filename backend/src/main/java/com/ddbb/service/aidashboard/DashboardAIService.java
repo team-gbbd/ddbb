@@ -269,18 +269,19 @@ public class DashboardAIService {
                     statusIcon = "⚠️";
                     statusText = "재고 부족 주의";
                     warningCount++;
-                } else if (quantity > minStock * 5) {
+                } else if (quantity >= 15) {
                     statusIcon = "📦";
                     statusText = "과잉 재고";
                     warningCount++;
-                    // 과잉 재고는 할인 프로모션 대상
+                    // 과잉 재고는 할인 프로모션 대상 (15개 이상)
                     excessInventory.add(String.format("%s (현재 %d개)", breadName, quantity));
+                    log.info("🔍 [과잉 재고 판정] {} - 재고: {}개 (기준: 15개 이상)", breadName, quantity);
                 } else {
                     statusIcon = "✅";
                     statusText = "적정";
                     okCount++;
-                    // 적정 재고는 SNS 마케팅 가능
-                    if (quantity >= minStock * 2) {
+                    // 적정 재고는 SNS 마케팅 가능 (10개 이상)
+                    if (quantity >= 10) {
                         sufficientInventory.add(String.format("%s (재고 %d개)", breadName, quantity));
                     }
                 }
@@ -301,7 +302,10 @@ public class DashboardAIService {
                     criticalCount, warningCount, okCount));
 
             // 전략 수립을 위한 힌트 제공
+            log.info("📊 [재고 분석] 과잉: {}개, 충분: {}개", excessInventory.size(), sufficientInventory.size());
+
             if (!excessInventory.isEmpty()) {
+                log.info("📦 [과잉 재고 목록] {}", excessInventory);
                 prompt.append("💡 할인 프로모션 추천 대상 (과잉 재고):\n");
                 for (String item : excessInventory) {
                     prompt.append(String.format("  - %s → 10~30%% 할인으로 빠른 소진 권장\n", item));
@@ -310,6 +314,7 @@ public class DashboardAIService {
             }
 
             if (!sufficientInventory.isEmpty()) {
+                log.info("✅ [충분 재고 목록] {}", sufficientInventory);
                 prompt.append("💡 SNS 마케팅 가능 제품 (재고 충분):\n");
                 for (String item : sufficientInventory) {
                     prompt.append(String.format("  - %s → 홍보 강화 가능\n", item));
@@ -387,8 +392,11 @@ public class DashboardAIService {
                             trend = "➡️ 안정적";
                         }
 
-                        prompt.append(String.format("• %s: 주간 %d개 (일평균 %.1f개, 점유율 %.1f%%) 어제 %d개 %s\n",
-                                entry.getKey(), entry.getValue(), dailyAvg, weekShare, yesterdaySold, trend));
+                        // 발주 권장량 계산 (2일분)
+                        int recommendOrder = (int) Math.ceil(dailyAvg * 2);
+
+                        prompt.append(String.format("• %s: 주간 %d개 (일평균 %.1f개, 발주 권장 %d개[2일분], 점유율 %.1f%%) 어제 %d개 %s\n",
+                                entry.getKey(), entry.getValue(), dailyAvg, recommendOrder, weekShare, yesterdaySold, trend));
                     });
             prompt.append("\n");
         }
@@ -424,23 +432,19 @@ public class DashboardAIService {
 
         prompt.append("🍞 빵집 핵심 원칙:\n");
         prompt.append("- 신선함이 생명! 발주는 1~2일분만 권장 (최대 3일분)\n");
-        prompt.append("- 할인 프로모션: 현재 남은 재고 수량 기반으로 추천\n");
-        prompt.append("- SNS 마케팅: 현재 재고가 충분한 제품만 추천\n\n");
+        prompt.append("- 할인 프로모션: 위에 명시된 '💡 할인 프로모션 추천 대상' 리스트의 제품만 할인 추천\n");
+        prompt.append("- SNS 마케팅: 위에 명시된 '💡 SNS 마케팅 가능 제품' 리스트의 제품만 마케팅 추천\n\n");
+
+        prompt.append("⚠️ 절대 규칙:\n");
+        prompt.append("1) 발주 수량 = 위 데이터의 '발주 권장 XX개[2일분]'을 그대로 사용! (이미 계산됨)\n");
+        prompt.append("2) 할인 대상 = '💡 할인 프로모션 추천 대상' 리스트에 있는 제품만!\n");
+        prompt.append("3) SNS 마케팅 = '💡 SNS 마케팅 가능 제품' 리스트에 있는 제품만!\n");
+        prompt.append("4) 재고 부족/긴급 제품은 절대 할인하지 마세요!\n\n");
 
         prompt.append("반드시 포함:\n");
-        prompt.append("1) 발주 권장: 제품명 + 수량 (일평균 × 1~2일분)\n");
-        prompt.append("2) 할인 프로모션: 현재 재고 기준 + 할인율 + 목표 소진량\n");
-        prompt.append("3) SNS 마케팅: 재고 충분한 제품만 언급\n\n");
-
-        prompt.append("✅ 좋은 예:\n");
-        prompt.append("\"소금버터롤 20개 발주 권장 (일평균 10개 × 2일분, 신선도 유지).\n");
-        prompt.append("현재 재고 쿠키 80개 중 30% 할인으로 30개 소진 목표.\n");
-        prompt.append("재고 충분한 머핀 SNS 마케팅 강화 제안.\"\n\n");
-
-        prompt.append("❌ 나쁜 예:\n");
-        prompt.append("\"소금버터롤 50개 발주 (5일분은 신선도 저하 위험)\"\n");
-        prompt.append("\"쿠키 30% 할인 (현재 재고량 미언급)\"\n");
-        prompt.append("\"품절 위험 머핀 SNS 홍보 (재고 없는데 홍보하면 기회 손실)\"\n\n");
+        prompt.append("1) 발주 권장: 긴급/부족 제품명 + '발주 권장 XX개[2일분]'에 표시된 정확한 수량 사용\n");
+        prompt.append("2) 할인 프로모션: '💡 할인 프로모션 추천 대상'에 명시된 제품 + 현재 재고량 + 할인율 + 목표 소진량\n");
+        prompt.append("3) SNS 마케팅: '💡 SNS 마케팅 가능 제품'에 명시된 제품만 언급\n\n");
 
         prompt.append("━━━━━ ⚠️ 중요 규칙 ━━━━━\n");
         prompt.append(String.format("1. 현재 시각 %d시, 오늘은 진행 중! 오늘 데이터로 트렌드 판단 절대 금지!\n", currentHour));
@@ -465,14 +469,17 @@ public class DashboardAIService {
                     "당신은 15년 경력의 베이커리 경영 컨설턴트입니다. " +
                     "제공된 실제 데이터만을 기반으로 정확하고 구체적인 분석을 제공합니다. " +
                     "추측이나 일반적인 조언은 하지 않으며, 오직 데이터 기반의 실행 가능한 인사이트만 제시합니다. " +
-                    "모든 제품명과 숫자는 제공된 데이터의 정확한 값을 사용합니다.");
+                    "모든 제품명과 숫자는 제공된 데이터의 정확한 값을 사용합니다. " +
+                    "절대 규칙: 발주 수량은 반드시 '일평균 × 1~2일'로 정확히 계산하고, " +
+                    "할인 프로모션은 '💡 할인 프로모션 추천 대상' 리스트에 명시된 제품만 추천하고, " +
+                    "SNS 마케팅은 '💡 SNS 마케팅 가능 제품' 리스트에 명시된 제품만 추천합니다.");
 
             ChatMessage userMessage = new ChatMessage("user", prompt);
 
             ChatCompletionRequest completionRequest = ChatCompletionRequest.builder()
                     .model("gpt-4o-mini")
                     .messages(Arrays.asList(systemMessage, userMessage))
-                    .temperature(0.2)  // 형식 일관성과 데이터 정확성 최우선
+                    .temperature(0.1)  // 더 엄격한 일관성 (0.2 → 0.1)
                     .maxTokens(1200)   // 더 상세한 분석을 위해 증가
                     .build();
 
@@ -501,6 +508,8 @@ public class DashboardAIService {
         String brief = extractSection(aiResponse, "BRIEF");
         String insight = extractSection(aiResponse, "INSIGHT");
         String strategy = extractSection(aiResponse, "STRATEGY");
+
+        log.info("🤖 [AI 응답 - STRATEGY] {}", strategy);
 
         // 폴백 메시지
         if (mood.isEmpty()) mood = "오늘도 빵집을 찾아주신 손님들께 감사드립니다!";

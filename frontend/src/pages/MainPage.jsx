@@ -32,7 +32,7 @@ const MainPage = () => {
               <p className="subtitle">편리한 결제와 관리 시스템을 경험하세요</p>
               <p className="description">
                 딥딥빵빵은 AI를 통해 빠르고 편리한 빵 스캔 및 빵 추천, 결제
-                시스템을 제공합니다. 어쩌고저쩌고
+                시스템을 제공합니다.
               </p>
             </div>
           </div>
