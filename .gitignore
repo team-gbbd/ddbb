@@ -55,6 +55,10 @@ frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
 
+# Backend Environment Variables
+backend/.env
+.env
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

@@ -38,11 +38,6 @@ const AdminNavigation = () => {
                 <i className="bi bi-robot"></i> AI 분석
               </Link>
             </li>
-            <li className="nav-item">
-              <Link className={`nav-link ${isActive('/dashboard')}`} to="/dashboard">
-                <i className="bi bi-bar-chart-line"></i> AI 대시보드
-              </Link>
-            </li>
           </ul>
           <ul className="navbar-nav ms-auto">
             <li className="nav-item">

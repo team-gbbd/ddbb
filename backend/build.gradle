@@ -34,6 +34,10 @@ dependencies {
 	// OpenAI API
 	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
 	
+	// LangChain4j for structured AI outputs
+	implementation 'dev.langchain4j:langchain4j:0.36.2'
+	implementation 'dev.langchain4j:langchain4j-open-ai:0.36.2'
+	
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

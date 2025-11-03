@@ -129,11 +129,11 @@ npm install
 npm run dev
 ```
 
-Vite 개발 서버가 시작됩니다. 브라우저에서 `http://localhost:3000`으로 접속하세요.
+Vite 개발 서버가 시작됩니다. 브라우저에서 `http://localhost:5173`으로 접속하세요.
 
 ### 6. 접속
 
-- **프론트엔드**: http://localhost:3000
+- **프론트엔드**: http://localhost:5173
 - **백엔드 API**: http://localhost:8080/api
 
 ---

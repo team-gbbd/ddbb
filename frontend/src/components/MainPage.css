@@ -235,3 +235,13 @@
     font-size: 0.95rem;
   }
 }
+
+/* AI 브리핑 페이지 - iOS 26 리퀴드 글라스 스타일 */
+.banner-section.ai-briefing-banner {
+  background: linear-gradient(180deg, 
+    rgba(180, 140, 100, 0.15) 0%, 
+    rgba(200, 165, 130, 0.1) 50%,
+    rgba(180, 140, 100, 0.15) 100%) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
