@@ -1,12 +1,12 @@
 import React from "react";
 import "../styles/MainPage.css";
-import Header from "../assets/Header";
+import Header from "../components/Header";
 import MainLogo from "../assets/MainLogo.png";
 
 const MainPage = () => {
   const handlePaymentStart = () => {
-    // 결제 시작 로직
-    window.location.href = "/Payment";
+    // AI 빵 스캐너로 이동
+    window.location.href = "/scanner";
   };
 
   const handleAdminPage = () => {

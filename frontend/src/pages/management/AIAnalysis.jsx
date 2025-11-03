@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from '../../components/AdminLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { aiAnalysisApi } from '../../services/management/api';
-import { getToday, getFirstDayOfMonth } from '../../utils/formatters';
+import { getYesterday, getFirstDayOfMonth } from '../../utils/formatters';
 import {
   SalesPredictionChart,
   RevenuePredictionChart,
@@ -14,7 +14,8 @@ import '../../styles/management/Admin.css';
 const AIAnalysis = () => {
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState(getFirstDayOfMonth());
-  const [endDate, setEndDate] = useState(getToday());
+  // 오늘 데이터는 불완전하므로 어제까지만 분석 (예측 정확도 향상)
+  const [endDate, setEndDate] = useState(getYesterday());
   const [analysisType, setAnalysisType] = useState('COMPREHENSIVE');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -185,7 +186,7 @@ const AIAnalysis = () => {
         {/* 분석 결과 */}
         {result && !loading && (
           <>
-           
+
             {/* 그래프 섹션 */}
             {result.chartData && (
               <>

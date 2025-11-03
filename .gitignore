@@ -37,6 +37,16 @@ out/
 ### VS Code ###
 .vscode/
 
+# Python (ai-scanner)
+venv/
+**/venv/
+*.pyc
+__pycache__/
+*.so
+*.egg-info/
+dist/
+*.log
+
 # Frontend (React + Vite)
 frontend/node_modules/
 frontend/dist/
