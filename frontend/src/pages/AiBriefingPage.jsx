@@ -6,7 +6,7 @@ import React, {
 } from "react";
 import "../styles/MainPage.css";
 import "../components/AiDashboard.css";
-import Header from "../assets/Header";
+import Header from "../components/Header";
 import MainLogo from "../assets/MainLogo.png";
 import api from "../services/management/api";
 
