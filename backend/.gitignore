@@ -36,5 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 
-# OpenAI API Key
+# OpenAI API Key and Local Configuration
 .env
+src/main/resources/application-local.properties
